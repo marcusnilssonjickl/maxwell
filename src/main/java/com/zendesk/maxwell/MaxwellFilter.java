@@ -129,13 +129,12 @@ public class MaxwellFilter {
 		for (Map.Entry<String, String> entry : includeColumnValues.entrySet()) {
 			String column = entry.getKey();
 			String columnValue = entry.getValue();
-			if (data.containsKey(column)) {
-				Object value = data.get(column);
-				if (value == null) return false;
 
-				String valueString = value.toString();
-				if (!columnValue.equals(valueString)) return false;
-			}
+			Object value = data.get(column);
+			if (value == null) return false;
+
+			String valueString = value.toString();
+			if (!columnValue.equals(valueString)) return false;
 		}
 
 		return true;
