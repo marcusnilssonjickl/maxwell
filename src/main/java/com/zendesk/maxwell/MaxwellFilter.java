@@ -17,7 +17,7 @@ public class MaxwellFilter {
 	private final ArrayList<Pattern> excludeTables = new ArrayList<>();
 	private final ArrayList<Pattern> blacklistDatabases = new ArrayList<>();
 	private final ArrayList<Pattern> blacklistTables = new ArrayList<>();
-	private final Map<String, Pattern> includeColumnValues = new HashMap<>();
+	private final Map<String, String> includeColumnValues = new HashMap<>();
 
 	public MaxwellFilter() { }
 	public MaxwellFilter(String includeDatabases,
@@ -89,7 +89,7 @@ public class MaxwellFilter {
 	}
 
 	public void includeColumnValue(String column, String value) throws MaxwellInvalidFilterException {
-		includeColumnValues.put(column, compile(value));
+		includeColumnValues.put(column, value);
 	}
 
 	public boolean isDatabaseWhitelist() {
@@ -126,15 +126,15 @@ public class MaxwellFilter {
 	}
 
 	private boolean matchesValues(Map<String, Object> data) {
-		for (Map.Entry<String, Pattern> entry : includeColumnValues.entrySet()) {
+		for (Map.Entry<String, String> entry : includeColumnValues.entrySet()) {
 			String column = entry.getKey();
-			Pattern columnPattern = entry.getValue();
+			String columnValue = entry.getValue();
 			if (data.containsKey(column)) {
 				Object value = data.get(column);
-				if (value != null) {
-					String valueString = value.toString();
-					if (!columnPattern.matcher(valueString).find()) return false;
-				}
+				if (value == null) return false;
+
+				String valueString = value.toString();
+				if (!columnValue.equals(valueString)) return false;
 			}
 		}
 
