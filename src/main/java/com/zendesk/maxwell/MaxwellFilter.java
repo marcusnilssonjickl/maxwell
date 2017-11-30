@@ -2,9 +2,7 @@ package com.zendesk.maxwell;
 
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /*
@@ -19,6 +17,7 @@ public class MaxwellFilter {
 	private final ArrayList<Pattern> excludeTables = new ArrayList<>();
 	private final ArrayList<Pattern> blacklistDatabases = new ArrayList<>();
 	private final ArrayList<Pattern> blacklistTables = new ArrayList<>();
+	private final Map<String, Pattern> includeColumnValues = new HashMap<>();
 
 	public MaxwellFilter() { }
 	public MaxwellFilter(String includeDatabases,
@@ -26,7 +25,8 @@ public class MaxwellFilter {
 						 String includeTables,
 						 String excludeTables,
 						 String blacklistDatabases,
-						 String blacklistTables) throws MaxwellInvalidFilterException {
+						 String blacklistTables,
+						 String includeColumnValues) throws MaxwellInvalidFilterException {
 		if ( includeDatabases != null ) {
 			for (String s : includeDatabases.split(","))
 				includeDatabase(s);
@@ -56,6 +56,12 @@ public class MaxwellFilter {
 			for ( String s : blacklistTables.split(",") )
 				blacklistTable(s);
 		}
+		if (includeColumnValues != null) {
+			for (String s : includeColumnValues.split(",")) {
+				String[] columnAndValue = s.split("=");
+				includeColumnValue(columnAndValue[0], columnAndValue[1]);
+			}
+		}
 	}
 
 	public void includeDatabase(String name) throws MaxwellInvalidFilterException {
@@ -80,6 +86,10 @@ public class MaxwellFilter {
 
 	public void blacklistTable(String name) throws MaxwellInvalidFilterException {
 		blacklistTables.add(compile(name));
+	}
+
+	public void includeColumnValue(String column, String value) throws MaxwellInvalidFilterException {
+		includeColumnValues.put(column, compile(value));
 	}
 
 	public boolean isDatabaseWhitelist() {
@@ -110,6 +120,22 @@ public class MaxwellFilter {
 		for ( Pattern p : excludeList ) {
 			if ( p.matcher(name).find() )
 				return false;
+		}
+
+		return true;
+	}
+
+	private boolean matchesValues(Map<String, Object> data) {
+		for (Map.Entry<String, Pattern> entry : includeColumnValues.entrySet()) {
+			String column = entry.getKey();
+			Pattern columnPattern = entry.getValue();
+			if (data.containsKey(column)) {
+				Object value = data.get(column);
+				if (value != null) {
+					String valueString = value.toString();
+					if (!columnPattern.matcher(valueString).find()) return false;
+				}
+			}
 		}
 
 		return true;
@@ -152,4 +178,13 @@ public class MaxwellFilter {
 			return filter.matches(database, table);
 		}
 	}
+
+	public static boolean matchesValues(MaxwellFilter filter, String database, String table, Map<String, Object> data) {
+		if (filter == null) {
+			return true;
+		} else {
+			return filter.matchesValues(data);
+		}
+	}
+
 }
